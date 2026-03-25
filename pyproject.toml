@@ -1,0 +1,42 @@
+[project]
+name = "ibis-enum"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Nick Crews", email = "nicholas.b.crews@gmail.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "ibis-framework>=6.0.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.8,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+lint = [
+    "ruff>=0.15.7",
+    "ty>=0.0.25",
+]
+test = [
+    "ibis-framework[duckdb]>=12.0.0",
+    "pytest>=9.0.2",
+]
+
+[tool.ruff]
+extend-include = ["*.ipynb"]
+lint.select = [
+  "E", # pyflakes
+  "F", # pyflakes
+  "I", # isort
+]
+
+[tool.ruff.lint.isort]
+# See https://github.com/charliermarsh/ruff#isort
+force-sort-within-sections = true
+required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.format]
+docstring-code-format = true
