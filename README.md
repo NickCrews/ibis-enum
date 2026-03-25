@@ -2,8 +2,8 @@
 
 `ibis-enum` provides a single utility: `IbisEnum`. It is like a plain
 `enum.Enum`, except it has better interoperability with [ibis](https://github.com/ibis-project/ibis).
+It is modeled after ordered enums in DuckDB, PostgreSQL, and MySQL.
 
-`IbisEnum` are modeled after ordered enums in DuckDB, PostgreSQL, and MySQL.
 - They are have an ordering, eg `Priority.LOW < Priority.MEDIUM < Priority.HIGH`
 - They provide useful conversion methods to convert between the string-y and int-y representations.
 - They can be compared against both plain python and ibis values,
@@ -13,8 +13,16 @@
   Note that plain string comparison of `"LOW" < "HIGH"` would evaluate to False!
 - They have great type annotations!
 - They are well-tested, linted, and formatted.
+- MIT licensed.
+
+I would consider this as being in Beta status. It is pretty simple,
+and I would trust it's implementation to be mostly bug free, and
+I don't see TOO many reasons to change the public API,
+but I probably still will alittle bit. So to keep me from breaking you, use a lockfile.
 
 ## Installation
+
+Available on [PyPI as `ibis-enum`](https://pypi.org/project/ibis-enum/).
 
 ```bash
 uv add ibis-enum
@@ -38,25 +46,51 @@ class Priority(IbisEnum):
 	# ALSO_MEDIUM = 1 # This would error
 ```
 
-## Creation and Conversion
+## Creation
 
+Using plain python values:
 
 ```python
-assert Priority.to_stringy(priority_code).execute() == "HIGH"
-assert Priority.to_integery(priority_name).execute() == 2
+assert Priority.MEDIUM == Priority("MEDIUM")
+assert Priority.MEDIUM == Priority(1)
+Priority("bogus") # errors
+Priority(999) # errors
+Priority("medium") # errors, case mismatch
+```
+
+## Conversion
+
+You can convert python values to the int-y or string-y form using classmethods:
+
+```python
+assert Priority.to_stringy(Priority.MEDIUM) == "MEDIUM"
+assert Priority.to_stringy("MEDIUM") == "MEDIUM"
+assert Priority.to_stringy(1) == "MEDIUM"
+
+assert Priority.to_integery(Priority.MEDIUM) == 1
+assert Priority.to_integery("MEDIUM") == 1
+assert Priority.to_integery(1) == 1
+```
+
+And you can convert ibis values, which give you back ibis StringValue and IntegerValues:
+
+```python
+assert Priority.to_stringy(ibis.literal("MEDIUM")).execute() == "MEDIUM"
+assert Priority.to_stringy(ibis.literal(1)).execute() == "MEDIUM"
+
+assert Priority.to_integery(ibis.literal("MEDIUM")).execute() == 1
+assert Priority.to_integery(ibis.literal(1)).execute() == 1
 ```
 
 ## Comparison and Ordering
 
-`IbisEnum` members can be compared to plain python ints, strings, and `IbisEnum`s:
+`IbisEnum` members can be compared to other `IbisEnum`s, plain python `int`s and `str`s
+which give back plain `bool`s as you would expect:
 
 ```python
-assert Priority.LOW < Priority.MEDIUM
-assert Priority.HIGH > Priority.MEDIUM
-assert Priority.URGENT >= 3
-
-# Note that with string comparison, "HIGH" < "LOW"
-assert "LOW" < Priority.HIGH
+assert Priority.LOW < Priority.HIGH
+assert Priority.LOW < "HIGH"
+assert Priority.LOW < 2
 ```
 
 Comparing to an ibis Value results in an ibis BooleanValue.
@@ -64,9 +98,8 @@ Any StringValue's are converted to the integer level when ordering is important!
 Otherwise we avoid casting whenever we don't need it, for optimal performance.
 
 ```python
-assert (Priority.HIGH == ibis.literal("HIGH")).execute() is True
-assert (Priority.HIGH == ibis.literal(2)).execute() is True
-assert (Priority.LOW < ibis.literal("HIGH")).execute() is True
+assert (Priority.LOW == ibis.literal("HIGH")).execute() is True
+assert (Priority.LOW < ibis.literal(2)).execute() is True
 ```
 
 ### Comparison Warning

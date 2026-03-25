@@ -3,6 +3,7 @@ name = "ibis-enum"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
+license = "MIT"
 authors = [
     { name = "Nick Crews", email = "nicholas.b.crews@gmail.com" }
 ]
@@ -10,7 +11,28 @@ requires-python = ">=3.10"
 dependencies = [
     "ibis-framework>=6.0.0",
 ]
+classifiers = [
+  "Development Status :: 2 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+  "License :: OSI Approved :: MIT License",
+]
+keywords = [
+    "ibis",
+    "ibis-project",
+    "enum",
+    "sql",
+]
 
+[project.urls]
+Homepage = "https://github.com/NickCrews/ibis-enum"
+Issues = "https://github.com/NickCrews/ibis-enum/issues"
+Source = "https://github.com/NickCrews/ibis-enum"
 [build-system]
 requires = ["uv_build>=0.8.8,<0.9.0"]
 build-backend = "uv_build"
