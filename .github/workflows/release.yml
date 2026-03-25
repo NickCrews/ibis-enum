@@ -73,6 +73,8 @@ jobs:
 
       - name: publish wheel to pypi
         uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e
+        with:
+          verbose: true
 
       - name: create GH release
         # even if publish to pypi failed, we want to create a release on GitHub
