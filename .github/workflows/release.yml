@@ -77,8 +77,6 @@ jobs:
           verbose: true
 
       - name: create GH release
-        # even if publish to pypi failed, we want to create a release on GitHub
-        if: always()
         run: gh release create v${{ steps.get-version.outputs.value }} dist/* --title "Release v${{ steps.get-version.outputs.value }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
