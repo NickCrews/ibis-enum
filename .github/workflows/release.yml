@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  schedule:
+    # weekly on Sunday.
+    - cron: "4 23 * * 0"
+
+  # as needed by clicking through the github actions UI
+  workflow_dispatch:
+
+# we do not want more than one release workflow executing at the same time, ever
+concurrency:
+  group: release
+  # cancelling in the middle of a release would create incomplete releases
+  # so cancel-in-progress is false
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.repository_owner == 'NickCrews'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.8.8"
+
+      - name: get version
+        id: get-version
+        run: echo "value=$(uv version --short)" >> "$GITHUB_OUTPUT"
+
+      - name: check if release already exists
+        id: check-release
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const version = '${{ steps.get-version.outputs.value }}';
+            const tag = `v${version}`;
+            try {
+              await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              });
+              return { exists: true };
+            } catch (error) {
+              if (error.status === 404) {
+                return { exists: false };
+              }
+              throw error;
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Error if release already exists
+        if: steps.check-release.outputs.exists == 'true'
+        run: echo "Release v${{ steps.get-version.outputs.value }} already exists. Aborting." && exit 1
+
+      - name: install python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: build wheel and source dist
+        run: uv build
+
+      - name: publish wheel to pypi
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e
+
+      - name: create GH release
+        # even if publish to pypi failed, we want to create a release on GitHub
+        if: always()
+        run: gh release create v${{ steps.get-version.outputs.value }} dist/* --title "Release v${{ steps.get-version.outputs.value }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
