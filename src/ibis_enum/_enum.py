@@ -260,33 +260,6 @@ class IbisEnum(Enum, metaclass=_IbisEnumMeta):
         made = cls(value)
         return made.name
 
-    def as_int(self) -> int:
-        """Return the member's integer value.
-
-        Examples
-        --------
-        >>> class Priority(IbisEnum):
-        ...     LOW = 0
-        ...     MEDIUM = 1
-        >>> Priority.MEDIUM.as_int()
-        1
-        """
-
-        return self.value
-
-    def as_str(self) -> str:
-        """Return the member name.
-
-        Examples
-        --------
-        >>> class Priority(IbisEnum):
-        ...     HIGH = 2
-        >>> Priority.HIGH.as_str()
-        'HIGH'
-        """
-
-        return self.name
-
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}.{self.name}"
 

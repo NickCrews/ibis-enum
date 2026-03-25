@@ -210,9 +210,6 @@ def test_int():
 
 
 def test_conversion():
-    assert Priority.MEDIUM.as_int() == 1
-    assert Priority.MEDIUM.as_str() == "MEDIUM"
-
     assert Priority.to_numericy(1) == 1
     assert Priority.to_stringy(1) == "MEDIUM"
     assert Priority.to_numericy(True) == 1
