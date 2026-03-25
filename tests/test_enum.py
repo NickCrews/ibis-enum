@@ -6,7 +6,11 @@ import ibis
 from ibis.expr import types as ir
 import pytest
 
-from ibis_enum import IbisEnum
+from ibis_enum import IbisEnum, __version__
+
+
+def test_version():
+    assert isinstance(__version__, str)
 
 
 class EmailEnum(IbisEnum):
