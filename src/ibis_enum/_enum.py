@@ -47,6 +47,12 @@ class _IbisEnumMeta(EnumMeta):
             raise TypeError(
                 "Can't check for membership of an Ibis expression in an IbisEnum."
             )
+        if isinstance(obj, str):
+            member_names = self.__members__.keys()
+            return obj in member_names
+        if _is_int(obj):
+            member_values = (member.value for member in self)
+            return obj in member_values
         return super().__contains__(obj)
 
 
@@ -298,12 +304,14 @@ class IbisEnum(Enum, metaclass=_IbisEnumMeta):
         if _is_int(other):
             return self.value, other
         if isinstance(other, ir.IntegerValue):
-            return ibis.literal(self.value), other
+            return self.value, other
         if isinstance(other, ir.StringValue):
-            return ibis.literal(self.name), other
+            return self.name, other
         raise TypeError(f"Cannot compare {self.__class__.__name__} to {type(other)}")
 
     def _get_orderable_pair(self, other: object) -> tuple[Any, Any]:
+        if isinstance(other, str):
+            return self.value, self.to_numericy(other)
         if isinstance(other, ir.StringValue):
             return self.value, self.to_numericy(other)
         return self._get_eq_pair(other)

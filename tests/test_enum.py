@@ -62,9 +62,12 @@ def test_container_semantics():
         Priority.HIGH,
     ]
     assert Priority.LOW in Priority
-    assert "MEDIUM" not in Priority
+    assert "LOW" in Priority
+    assert "MEDIUM" in Priority
     assert "medium" not in Priority
+    assert "bogus" not in Priority
     assert 0 in Priority
+    assert 1 in Priority
     assert -1 not in Priority
     with pytest.raises(TypeError) as exc_info:
         ibis.literal(0) in Priority
@@ -119,10 +122,35 @@ def test_ordering_basic():
     assert -1 < Priority.LOW
     assert 0 <= Priority.LOW
 
+    assert Priority.LOW < "MEDIUM"
+    assert Priority.LOW <= "MEDIUM"
+    assert Priority.MEDIUM > "LOW"
+    assert Priority.MEDIUM >= "LOW"
+
+    assert "MEDIUM" > Priority.LOW
+    assert "MEDIUM" >= Priority.LOW
+    assert "LOW" < Priority.MEDIUM
+    assert "LOW" <= Priority.MEDIUM
+
     assert Priority.LOW < Priority.MEDIUM
     assert Priority.LOW <= Priority.MEDIUM
     assert Priority.MEDIUM > Priority.LOW
     assert Priority.MEDIUM >= Priority.LOW
+
+
+def test_ordering_errors():
+    with pytest.raises(ValueError) as exc_info:
+        Priority.LOW < "BOGUS"
+    assert (
+        str(exc_info.value)
+        == "'BOGUS' is not a valid Priority. Valid names are: ['LOW', 'MEDIUM', 'HIGH']"
+    )
+    with pytest.raises(ValueError) as exc_info:
+        Priority.LOW < "medium"
+    assert (
+        str(exc_info.value)
+        == "'medium' is not a valid Priority. Valid names are: ['LOW', 'MEDIUM', 'HIGH']"  # noqa: E501
+    )
 
 
 def test_ordering_vs_ibis_second():
