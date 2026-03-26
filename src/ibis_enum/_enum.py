@@ -4,6 +4,7 @@ from enum import Enum, EnumMeta, unique
 from typing import Any, cast, overload
 
 import ibis
+from ibis.common.deferred import Deferred, deferrable
 from ibis.expr import types as ir
 from typing_extensions import Never
 
@@ -136,27 +137,30 @@ class IbisEnum(Enum, metaclass=_IbisEnumMeta):
 
     @overload
     @classmethod
-    def to_numericy(cls, value: str | int) -> int: ...
+    def to_numericy(cls, value: Deferred, /) -> Deferred: ...
+    @overload
+    @classmethod
+    def to_numericy(cls, value: str | int, /) -> int: ...
     @overload
     @classmethod
     def to_numericy(
-        cls, value: ir.StringScalar | ir.NumericScalar
+        cls, value: ir.StringScalar | ir.NumericScalar, /
     ) -> ir.NumericScalar: ...
     @overload
     @classmethod
     def to_numericy(
-        cls, value: ir.StringColumn | ir.NumericColumn
+        cls, value: ir.StringColumn | ir.NumericColumn, /
     ) -> ir.NumericColumn: ...
     @overload
     @classmethod
     def to_numericy(
-        cls, value: ir.StringValue | ir.NumericValue
+        cls, value: ir.StringValue | ir.NumericValue, /
     ) -> ir.NumericValue: ...
 
     @classmethod
     def to_numericy(
-        cls, value: str | int | ir.StringValue | ir.NumericValue
-    ) -> int | ir.NumericValue:
+        cls, value: str | int | ir.StringValue | ir.NumericValue | Deferred, /
+    ) -> int | ir.NumericValue | Deferred:
         """Coerce something to a python `int` or ibis NumericValue.
 
         Unlike plain :class:`enum.Enum`, this also accepts Ibis string and
@@ -187,6 +191,8 @@ class IbisEnum(Enum, metaclass=_IbisEnumMeta):
         SELECT 1 AS "1"
         """  # noqa: E501
 
+        if isinstance(value, Deferred):
+            return _deferred_to_numericy(cls, value)
         if isinstance(value, ir.StringValue):
             mapping = {name: member.value for name, member in cls.__members__.items()}
             return cast(
@@ -200,16 +206,19 @@ class IbisEnum(Enum, metaclass=_IbisEnumMeta):
 
     @overload
     @classmethod
-    def to_stringy(cls, value: str | int) -> str: ...
+    def to_stringy(cls, value: Deferred, /) -> Deferred: ...
+    @overload
+    @classmethod
+    def to_stringy(cls, value: str | int, /) -> str: ...
     @overload
     @classmethod
     def to_stringy(
-        cls, value: ir.StringScalar | ir.IntegerScalar
+        cls, value: ir.StringScalar | ir.IntegerScalar, /
     ) -> ir.StringScalar: ...
     @overload
     @classmethod
     def to_stringy(
-        cls, value: ir.StringColumn | ir.IntegerColumn
+        cls, value: ir.StringColumn | ir.IntegerColumn, /
     ) -> ir.StringColumn: ...
     @overload
     @classmethod
@@ -217,8 +226,8 @@ class IbisEnum(Enum, metaclass=_IbisEnumMeta):
 
     @classmethod
     def to_stringy(
-        cls, value: str | int | ir.StringValue | ir.IntegerValue
-    ) -> str | ir.StringValue:
+        cls, value: str | int | ir.StringValue | ir.IntegerValue | Deferred, /
+    ) -> str | ir.StringValue | Deferred:
         """Convert an enum member name or value to its canonical string form.
 
         Unlike plain :class:`enum.Enum`, this also accepts Ibis string and
@@ -249,6 +258,8 @@ class IbisEnum(Enum, metaclass=_IbisEnumMeta):
         SELECT 'MEDIUM' AS "'MEDIUM'"
         """  # noqa: E501
 
+        if isinstance(value, Deferred):
+            return _deferred_to_stringy(cls, value)
         if isinstance(value, ir.StringValue):
             return value
         if isinstance(value, ir.IntegerValue):
@@ -290,6 +301,8 @@ class IbisEnum(Enum, metaclass=_IbisEnumMeta):
         return self._get_eq_pair(other)
 
     @overload
+    def __eq__(self, other: Deferred, /) -> Deferred: ...
+    @overload
     def __eq__(
         self, other: ir.NumericScalar | ir.StringScalar, /
     ) -> ir.BooleanScalar: ...
@@ -302,10 +315,14 @@ class IbisEnum(Enum, metaclass=_IbisEnumMeta):
     @overload
     def __eq__(self, other: object, /) -> bool: ...
 
-    def __eq__(self, other: object, /) -> bool | ir.BooleanValue:
+    def __eq__(self, other: object, /) -> bool | ir.BooleanValue | Deferred:
+        if isinstance(other, Deferred):
+            return _deferred_eq(self, other)
         self_val, other_val = self._get_eq_pair(other)
         return self_val == other_val
 
+    @overload
+    def __ne__(self, other: Deferred, /) -> Deferred: ...
     @overload
     def __ne__(
         self, other: ir.NumericScalar | ir.StringScalar, /
@@ -319,10 +336,14 @@ class IbisEnum(Enum, metaclass=_IbisEnumMeta):
     @overload
     def __ne__(self, other: object, /) -> bool: ...
 
-    def __ne__(self, other: object, /) -> bool | ir.BooleanValue:
+    def __ne__(self, other: object, /) -> bool | ir.BooleanValue | Deferred:
+        if isinstance(other, Deferred):
+            return _deferred_ne(self, other)
         self_val, other_val = self._get_eq_pair(other)
         return self_val != other_val
 
+    @overload
+    def __lt__(self, other: Deferred, /) -> Deferred: ...
     @overload
     def __lt__(
         self, other: ir.NumericScalar | ir.StringScalar, /
@@ -336,10 +357,14 @@ class IbisEnum(Enum, metaclass=_IbisEnumMeta):
     @overload
     def __lt__(self, other: object, /) -> bool: ...
 
-    def __lt__(self, other: object) -> bool | ir.BooleanValue:
+    def __lt__(self, other: object) -> bool | ir.BooleanValue | Deferred:
+        if isinstance(other, Deferred):
+            return _deferred_lt(self, other)
         self_val, other_val = self._get_orderable_pair(other)
         return self_val < other_val
 
+    @overload
+    def __le__(self, other: Deferred, /) -> Deferred: ...
     @overload
     def __le__(
         self, other: ir.NumericScalar | ir.StringScalar, /
@@ -353,10 +378,14 @@ class IbisEnum(Enum, metaclass=_IbisEnumMeta):
     @overload
     def __le__(self, other: object, /) -> bool: ...
 
-    def __le__(self, other: object, /) -> bool | ir.BooleanValue:
+    def __le__(self, other: object, /) -> bool | ir.BooleanValue | Deferred:
+        if isinstance(other, Deferred):
+            return _deferred_le(self, other)
         self_val, other_val = self._get_orderable_pair(other)
         return self_val <= other_val
 
+    @overload
+    def __gt__(self, other: Deferred, /) -> Deferred: ...
     @overload
     def __gt__(
         self, other: ir.NumericScalar | ir.StringScalar, /
@@ -370,10 +399,14 @@ class IbisEnum(Enum, metaclass=_IbisEnumMeta):
     @overload
     def __gt__(self, other: object, /) -> bool: ...
 
-    def __gt__(self, other: object, /) -> bool | ir.BooleanValue:
+    def __gt__(self, other: object, /) -> bool | ir.BooleanValue | Deferred:
+        if isinstance(other, Deferred):
+            return _deferred_gt(self, other)
         self_val, other_val = self._get_orderable_pair(other)
         return self_val > other_val
 
+    @overload
+    def __ge__(self, other: Deferred, /) -> Deferred: ...
     @overload
     def __ge__(
         self, other: ir.NumericScalar | ir.StringScalar, /
@@ -387,6 +420,54 @@ class IbisEnum(Enum, metaclass=_IbisEnumMeta):
     @overload
     def __ge__(self, other: object, /) -> bool: ...
 
-    def __ge__(self, other: object) -> bool | ir.BooleanValue:
+    def __ge__(self, other: object) -> bool | ir.BooleanValue | Deferred:
+        if isinstance(other, Deferred):
+            return _deferred_ge(self, other)
         self_val, other_val = self._get_orderable_pair(other)
         return self_val >= other_val
+
+
+@deferrable
+def _deferred_eq(member: IbisEnum, other: object) -> bool | ir.BooleanValue:
+    self_val, other_val = member._get_eq_pair(other)
+    return self_val == other_val
+
+
+@deferrable
+def _deferred_ne(member: IbisEnum, other: object) -> bool | ir.BooleanValue:
+    self_val, other_val = member._get_eq_pair(other)
+    return self_val != other_val
+
+
+@deferrable
+def _deferred_lt(member: IbisEnum, other: object) -> bool | ir.BooleanValue:
+    self_val, other_val = member._get_orderable_pair(other)
+    return self_val < other_val
+
+
+@deferrable
+def _deferred_le(member: IbisEnum, other: object) -> bool | ir.BooleanValue:
+    self_val, other_val = member._get_orderable_pair(other)
+    return self_val <= other_val
+
+
+@deferrable
+def _deferred_gt(member: IbisEnum, other: object) -> bool | ir.BooleanValue:
+    self_val, other_val = member._get_orderable_pair(other)
+    return self_val > other_val
+
+
+@deferrable
+def _deferred_ge(member: IbisEnum, other: object) -> bool | ir.BooleanValue:
+    self_val, other_val = member._get_orderable_pair(other)
+    return self_val >= other_val
+
+
+@deferrable
+def _deferred_to_numericy(cls: type[IbisEnum], value: object) -> int | ir.NumericValue:
+    return cls.to_numericy(value)  # ty:ignore[no-matching-overload]
+
+
+@deferrable
+def _deferred_to_stringy(cls: type[IbisEnum], value: object) -> str | ir.StringValue:
+    return cls.to_stringy(value)  # ty:ignore[no-matching-overload]

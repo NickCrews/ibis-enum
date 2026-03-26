@@ -164,6 +164,29 @@ def test_ordering_vs_ibis_second():
     assert (Priority.LOW <= STRING_SCALAR_MEDIUM).execute()
 
 
+def test_comparison_vs_ibis_deferred():
+    t = ibis.table({"name": "string", "level": "int64"}, name="t")
+
+    expected = [
+        ((Priority.MEDIUM == t.level), (Priority.MEDIUM == ibis._.level)),
+        ((Priority.MEDIUM != t.level), (Priority.MEDIUM != ibis._.level)),
+        ((Priority.MEDIUM == t.name), (Priority.MEDIUM == ibis._.name)),
+        ((Priority.MEDIUM != t.name), (Priority.MEDIUM != ibis._.name)),
+        ((Priority.LOW < t.level), (Priority.LOW < ibis._.level)),
+        ((Priority.LOW <= t.level), (Priority.LOW <= ibis._.level)),
+        ((Priority.HIGH > t.level), (Priority.HIGH > ibis._.level)),
+        ((Priority.HIGH >= t.level), (Priority.HIGH >= ibis._.level)),
+        ((Priority.LOW < t.name), (Priority.LOW < ibis._.name)),
+        ((Priority.LOW <= t.name), (Priority.LOW <= ibis._.name)),
+        ((Priority.HIGH > t.name), (Priority.HIGH > ibis._.name)),
+        ((Priority.HIGH >= t.name), (Priority.HIGH >= ibis._.name)),
+    ]
+
+    for concrete_expr, deferred_expr in expected:
+        assert isinstance(deferred_expr, ibis.Deferred)
+        assert deferred_expr.resolve(t).equals(concrete_expr)
+
+
 @pytest.mark.xfail(
     reason="ibis.Value.__lt__ is called first before IbisEnum.__gt__, and ibis doesn't incorrectly errors instead of returning NotImplemented"  # noqa: E501
 )  # noqa: E501
@@ -230,6 +253,19 @@ def test_conversion():
         Priority.to_stringy(100)
     with pytest.raises(ValueError):
         Priority.to_stringy("medium")
+
+
+def test_conversion_deferred():
+    t = ibis.table({"name": "string", "level": "int64"}, name="t")
+    cases = [
+        (Priority.to_numericy(t.name), Priority.to_numericy(ibis._.name)),
+        (Priority.to_numericy(t.level), Priority.to_numericy(ibis._.level)),
+        (Priority.to_stringy(t.name), Priority.to_stringy(ibis._.name)),
+        (Priority.to_stringy(t.level), Priority.to_stringy(ibis._.level)),
+    ]
+    for concrete_expr, deferred_expr in cases:
+        assert isinstance(deferred_expr, ibis.Deferred)
+        assert deferred_expr.resolve(t).equals(concrete_expr)
 
 
 def test_non_numeric_enum():
